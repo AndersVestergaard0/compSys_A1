@@ -23,22 +23,20 @@ struct kdtree_data {
 };
 
 struct query {
-  double lon;
-  double lat;
+  double longitude;
+  double latitude;
 };
 
 struct kdtree_data* mk_kdtree(struct record* rs, int n);
 struct node *build_kdtree(struct record *rs, int n, int depth);
 struct record* find_median(struct record *rs, int n, int axis);
-void print_kdtree(struct kdtree_data *data);
-void print_kdtree_node(const struct node *node, int depth);
 int compare_records_lon(const void *a, const void *b);
 int compare_records_lat(const void *a, const void *b);
 void free_kdtree(struct kdtree_data* data);
 void free_kdtree_node(struct node *node);
 const struct record* lookup_kdtree(struct kdtree_data *data, double lon, double lat);
 double calculate_euclidean_distance(const struct record *node_r, const struct query query);
-void search_kdtree(struct node **closest_node, double *clostest_dist, const struct query query, struct node *node);
+void search_kdtree(struct node **closest_node, double *closest_dist, const struct query query, struct node *node);
 double calculate_difference(const struct node *node, const struct query query);
 
 int main(int argc, char** argv) {
@@ -48,6 +46,7 @@ int main(int argc, char** argv) {
                           (lookup_fn)lookup_kdtree);
 }
 
+// The record reference is assumed not to be used elsewhere and the order of them is mutated 
 struct kdtree_data* mk_kdtree(struct record* rs, int n) {
   if (rs == NULL || n <= 0) {
     return NULL;
@@ -64,49 +63,7 @@ struct kdtree_data* mk_kdtree(struct record* rs, int n) {
     return NULL;
   }
 
-  print_kdtree(data);
-
   return data;
-}
-
-void print_kdtree(struct kdtree_data *data) {
-    if (data == NULL || data->root == NULL) {
-        printf("--- K-D Tree is empty ---\n");
-        return;
-    }
-    printf("\n--- K-D Tree Structure (Right branch printed higher) ---\n");
-    print_kdtree_node(data->root, 0);
-    printf("------------------------------------------------------\n");
-}
-
-void print_kdtree_node(const struct node *node, int depth) {
-    if (node == NULL) {
-        return;
-    }
-
-    // 1. Traverse right branch (Printed higher up for visualization)
-    print_kdtree_node(node->right, depth + 1);
-
-    // 2. Print current node with indentation
-    
-    // Create indentation
-    for (int i = 0; i < depth; i++) {
-        printf("    "); 
-    }
-
-    // Determine the split axis label (0=LON, 1=LAT)
-    const char *axis_label = (node->axis == 0) ? "LON" : "LAT";
-
-    // Print node information
-    printf("|- [D:%d | Split:%s] (%.6f, %.6f) ID: %ld\n",
-           depth,
-           axis_label,
-           node->r->lon,
-           node->r->lat,
-           node->r->osm_id);
-
-    // 3. Traverse left branch
-    print_kdtree_node(node->left, depth + 1);
 }
 
 struct node *build_kdtree(struct record *rs, int n, int depth) {
@@ -129,8 +86,14 @@ struct node *build_kdtree(struct record *rs, int n, int depth) {
   node->axis = axis;
   node->r = median;
 
-  node->left = build_kdtree(rs, median - rs, depth + 1);
-  node->right = build_kdtree(median + 1, rs + n - (median + 1), depth + 1);
+  // Number of elements to the left of median (excluding the median itself)
+  int l = median - rs;
+
+  // Number of elements to the right of median (excluding the median itself)
+  int r = n - l - 1;
+  
+  node->left = build_kdtree(rs, l, depth + 1);
+  node->right = build_kdtree(median + 1, r, depth + 1);
 
   return node;
 }
@@ -205,8 +168,8 @@ const struct record* lookup_kdtree(struct kdtree_data *data, double lon, double 
   }
 
   struct query query = {
-    lon = lon, 
-    lat = lat,
+    .longitude = lon, 
+    .latitude = lat,
   };
 
   struct node *closest_node = data->root;
@@ -217,33 +180,33 @@ const struct record* lookup_kdtree(struct kdtree_data *data, double lon, double 
   return closest_node->r;
 }
 
-void search_kdtree(struct node **closest_node, double *clostest_dist, const struct query query, struct node *node) {
+void search_kdtree(struct node **closest_node, double *closest_dist, const struct query query, struct node *node) {
   if (node == NULL) {
     return;
   }
 
   double dist = calculate_euclidean_distance(node->r, query);
 
-  if (dist < *clostest_dist) {
+  if (dist < *closest_dist) {
     *closest_node = node;
-    *clostest_dist = dist;
+    *closest_dist = dist;
   }
  
   double diff = calculate_difference(node, query);
-  double radius = *clostest_dist;
+  double radius = *closest_dist;
 
   if (diff >= 0 || radius > fabs(diff)) {
-    search_kdtree(closest_node, clostest_dist, query, node->left);
+    search_kdtree(closest_node, closest_dist, query, node->left);
   } 
   
   if (diff <= 0 || radius > fabs(diff)) {
-    search_kdtree(closest_node, clostest_dist, query, node->right);
+    search_kdtree(closest_node, closest_dist, query, node->right);
   }
 }
 
 double calculate_euclidean_distance(const struct record *node_r, const struct query query) {
-  double dx = node_r->lon - query.lon;
-  double dy = node_r->lat - query.lat;
+  double dx = node_r->lon - query.longitude;
+  double dy = node_r->lat - query.latitude;
 
   double dist = sqrt(dx * dx + dy * dy);
 
@@ -252,8 +215,8 @@ double calculate_euclidean_distance(const struct record *node_r, const struct qu
 
 double calculate_difference(const struct node *node, const struct query query) {
   if (node->axis == 0) { 
-    return node->r->lon - query.lon;
+    return node->r->lon - query.longitude;
   } else {
-    return node->r->lat - query.lat;
+    return node->r->lat - query.latitude;
   }
 }
