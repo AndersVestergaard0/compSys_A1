@@ -1,0 +1,7 @@
+# gitignore everything with no extension
+*
+!*.*
+!Makefile
+
+*.o
+*.tsv
