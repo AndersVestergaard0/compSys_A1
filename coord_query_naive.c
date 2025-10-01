@@ -15,9 +15,20 @@ struct naive_data {
   int n;
 };
 
+struct naive_data* mk_naive(struct record* rs, int n);
+void free_naive(struct naive_data* data);
+const struct record* lookup_naive(struct naive_data *data, double lon, double lat);
+double calculate_euclidean_distance(struct record *start_r, double target_lon, double target_lat);
+
+int main(int argc, char** argv) {
+  return coord_query_loop(argc, argv,
+                          (mk_index_fn)mk_naive,
+                          (free_index_fn)free_naive,
+                          (lookup_fn)lookup_naive);
+}
+
 struct naive_data* mk_naive(struct record* rs, int n) {
-  if (rs == NULL || n <= 0)
-  {
+  if (rs == NULL || n <= 0) {
     return NULL;
   }
 
@@ -31,24 +42,14 @@ struct naive_data* mk_naive(struct record* rs, int n) {
   data->n = n;
   
   return data;
-
 }
 
 void free_naive(struct naive_data* data) {
-   if (data == NULL) {
+  if (data == NULL) {
     return;
   }
 
   free(data);
-}
-
-double distance(struct record destination, double goal_lon, double goal_lat ){
-  double dx = destination.lon - goal_lon;
-  double dy = destination.lat - goal_lat;
-
-  double dist = sqrt(dx * dx + dy * dy);
-
-  return dist;
 }
 
 const struct record* lookup_naive(struct naive_data *data, double lon, double lat) {
@@ -56,23 +57,27 @@ const struct record* lookup_naive(struct naive_data *data, double lon, double la
     return NULL;
   }
 
-  struct record* closest = &data->rs[0];
+  struct record* closest_r = &data->rs[0];
+  double closest_dist = calculate_euclidean_distance(closest_r, lon, lat);
   
-  for (int i = 0; i < data->n; i++) {
-    if (distance(data->rs[i], lon, lat) < distance(*closest, lon, lat))
-    {
-      closest = &data->rs[i];
-    }
+  for (int i = 1; i < data->n; i++) {
+    struct record *current_r = &data->rs[i];
+    double dist = calculate_euclidean_distance(current_r, lon, lat);
 
-    return closest;
-
+    if (dist < closest_dist) {
+      closest_r = current_r;
+      closest_dist = dist;
     }
-    return NULL;
+  }
+
+  return closest_r;
 }
 
-int main(int argc, char** argv) {
-  return coord_query_loop(argc, argv,
-                          (mk_index_fn)mk_naive,
-                          (free_index_fn)free_naive,
-                          (lookup_fn)lookup_naive);
+double calculate_euclidean_distance(struct record *start_r, double target_lon, double target_lat) {
+  double dx = start_r->lon - target_lon;
+  double dy = start_r->lat - target_lat;
+
+  double dist = sqrt(dx * dx + dy * dy);
+
+  return dist;
 }
