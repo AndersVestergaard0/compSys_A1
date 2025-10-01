@@ -14,6 +14,17 @@ struct naive_data {
   int n;
 };
 
+struct naive_data* mk_naive(struct record* rs, int n);
+void free_naive(struct naive_data* data);
+const struct record* lookup_naive(struct naive_data *data, int64_t needle);
+
+int main(int argc, char** argv) {
+  return id_query_loop(argc, argv,
+                    (mk_index_fn)mk_naive,
+                    (free_index_fn)free_naive,
+                    (lookup_fn)lookup_naive);
+}
+
 struct naive_data* mk_naive(struct record* rs, int n) {
   if (rs == NULL || n <= 0) {
     return NULL;
@@ -44,7 +55,7 @@ const struct record* lookup_naive(struct naive_data *data, int64_t needle) {
     return NULL;
   }
 
-  size_t i;
+  int i;
   
   for (i = 0; i < data->n; i++) {
     if (data->rs[i].osm_id == needle) {
@@ -53,11 +64,4 @@ const struct record* lookup_naive(struct naive_data *data, int64_t needle) {
   }
 
   return NULL;
-}
-
-int main(int argc, char** argv) {
-  return id_query_loop(argc, argv,
-                    (mk_index_fn)mk_naive,
-                    (free_index_fn)free_naive,
-                    (lookup_fn)lookup_naive);
 }

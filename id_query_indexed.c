@@ -19,6 +19,17 @@ struct indexed_data {
   int n;
 };
 
+struct indexed_data* mk_indexed(struct record* rs, int n);
+void free_indexed(struct indexed_data* data);
+const struct record* lookup_indexed(struct indexed_data *data, int64_t needle);
+
+int main(int argc, char** argv) {
+  return id_query_loop(argc, argv,
+                    (mk_index_fn)mk_indexed,
+                    (free_index_fn)free_indexed,
+                    (lookup_fn)lookup_indexed);
+}
+
 struct indexed_data* mk_indexed(struct record* rs, int n) {
   if (rs == NULL || n <= 0) {
     return NULL;
@@ -65,7 +76,7 @@ const struct record* lookup_indexed(struct indexed_data *data, int64_t needle) {
     return NULL;
   }
 
-  size_t i;
+  int i;
   
   for (i = 0; i < data->n; i++) {
     if (data->irs[i].osm_id == needle) {
@@ -74,11 +85,4 @@ const struct record* lookup_indexed(struct indexed_data *data, int64_t needle) {
   }
 
   return NULL;
-}
-
-int main(int argc, char** argv) {
-  return id_query_loop(argc, argv,
-                    (mk_index_fn)mk_indexed,
-                    (free_index_fn)free_indexed,
-                    (lookup_fn)lookup_indexed);
 }
