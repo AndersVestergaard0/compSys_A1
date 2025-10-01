@@ -53,10 +53,8 @@ void free_indexed(struct indexed_data* data) {
     return;
   }
   
-  for (int i = 0; i < data->n; i++) {
-    if (data->irs[i] != NULL) {
-      free(data->irs[i]);
-    }
+  if (data->irs != NULL) {
+    free(data->irs);
   }
 
   free(data);
@@ -71,7 +69,7 @@ const struct record* lookup_indexed(struct indexed_data *data, int64_t needle) {
   
   for (i = 0; i < data->n; i++) {
     if (data->irs[i].osm_id == needle) {
-      return &data->irs[i];
+      return data->irs[i].record;
     }
   }
 
