@@ -20,8 +20,14 @@ struct naive_data* mk_naive(struct record* rs, int n) {
   }
 
   struct naive_data* data = malloc(sizeof(struct naive_data));
+
+  if (data == NULL) {
+    return NULL;
+  }
+
   data->rs = rs;
   data->n = n;
+  
   return data;
 }
 
