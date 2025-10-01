@@ -1,7 +1,24 @@
-# gitignore everything with no extension
+# Ignore everything by default
 *
-!*.*
-!Makefile
 
+# Allow directories (so rules inside them can be checked)
+!*/
+
+# Allow any file with an extension
+!*.*
+
+# Always allow Makefiles (root and inside src/)
+!**/Makefile
+
+# Ignore extensionless files everywhere else (after re-allow)
+*.[!.]*
+
+# Allow C and header files in src/
+!src/**/*.c
+!src/**/*.h
+
+# Ignore .o files only inside src/
 *.o
+
+# Ignore .tsv everywhere...
 *.tsv
